@@ -9,5 +9,5 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 
-nnoremap <leader>r :call RunIt()<CR>
-nnoremap <leader>d :call DebugIt()<CR>
+nnoremap <leader>r :call vimdemux#RunIt()<CR>
+nnoremap <leader>d :call vimdemux#DebugIt()<CR>

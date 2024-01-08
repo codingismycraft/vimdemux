@@ -28,7 +28,26 @@ let git_info = "n/a"
 python3 << endpython
 preparePythonPath()
 import vimdemux.utils as utils
-print("not implemented yet..")
+import vim
+import os
+fullpath = vim.eval(""" expand('%:p') """)
+linenum = int(vim.eval(""" line(".") """)) 
+utils.run(fullpath, linenum)
+endpython
+return git_info
+endfunction
+
+
+function! vimdemux#DebugIt()
+let git_info = "n/a" 
+python3 << endpython
+preparePythonPath()
+import vimdemux.utils as utils
+import vim
+import os
+fullpath = vim.eval(""" expand('%:p') """)
+linenum = int(vim.eval(""" line(".") """)) 
+utils.debug(fullpath, linenum)
 endpython
 return git_info
 endfunction
