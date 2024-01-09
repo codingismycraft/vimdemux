@@ -169,9 +169,9 @@ def _debug_script(fullpath):
     basename = os.path.basename(fullpath)
     cmds = [
         f"cd {dirname}",
-        "export PYTHONBREAKPOINT=ipdb.set_trace",
+        "unset PYTHONBREAKPOINT",
         "clear",
-        f"python3.10 -m unittest {basename} "
+        f"python3.10 -m ipdb {basename} "
     ]
 
     cmd = ' && '.join(cmds)
@@ -301,13 +301,14 @@ def _find_enclosing_function(filename, lineno):
                 return str(node.name)
     return None
 
-
-if __name__ == '__main__':
-    # Self tests.
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    fullpath = os.path.join(current_dir, "test", "test_utils.py" )
-    debug(fullpath , 13)
-
-    fullpath = os.path.join(current_dir, "test", "say_hello.py" )
-    run(fullpath, 0)
-
+# Uncomment the following to run tests.
+# if __name__ == '__main__':
+#     # Self tests.
+#     #current_dir = os.path.dirname(os.path.realpath(__file__))
+#     # fullpath = os.path.join(current_dir, "test", "test_utils.py" )
+#     # debug(fullpath , 13)
+# 
+#     #fullpath = os.path.join(current_dir, "test", "say_hello.py" )
+#     fullpath = "/home/john/samples/junk.py"
+#     debug(fullpath, 2)
+# 
