@@ -2,7 +2,9 @@
 
 import ast
 import enum
+import json
 import os
+import pathlib
 
 
 def run(fullpath, linenum):
@@ -86,6 +88,7 @@ def _run_script(fullpath):
     fullpath : str
         The path to the file that needs to be executed. 
     """
+    fullpath = _get_mapped_filename(fullpath)
     dirname = os.path.dirname(fullpath)
     basename = os.path.basename(fullpath)
     cmds = [
@@ -122,6 +125,7 @@ def _run_test(fullpath, linenum):
     if function_name:
         function_class = _find_enclosing_class(fullpath, linenum)
 
+    fullpath = _get_mapped_filename(fullpath)
     if function_name is None:
         # Not inside a test thus we need to run the whole suite.
         # Example of the resulting call:
@@ -165,6 +169,7 @@ def _debug_script(fullpath):
 
     fullpath (str): The full path to the test file.
     """
+    fullpath = _get_mapped_filename(fullpath)
     dirname = os.path.dirname(fullpath)
     basename = os.path.basename(fullpath)
     cmds = [
@@ -201,6 +206,7 @@ def _debug_test(fullpath, linenum):
     if function_name:
         function_class = _find_enclosing_class(fullpath, linenum)
 
+    fullpath = _get_mapped_filename(fullpath)
     if function_name is None:
         # Not inside a test thus we need to run the whole suite.
         # Example of the resulting call:
@@ -296,10 +302,73 @@ def _find_enclosing_function(filename, lineno):
     with open(filename, "r") as source:
         tree = ast.parse(source.read(), filename)
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            if node.lineno <= node.lineno + lineno <= (node.lineno + node.body[-1].lineno):
+        if isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef) :
+            if node.lineno <= lineno and lineno <= node.body[-1].lineno:
                 return str(node.name)
     return None
+
+def _load_settings():
+    """Loads the applicable settings.
+
+    The settings must be saved under the home directory
+    in a file called .videmux.config in JSON format.
+
+    returns: A python dictionary holding the config settings.
+    """
+    home_dir = pathlib.Path.home()
+    filename = os.path.join(home_dir, '.videmux.config')
+    with open(filename) as fin:
+        return json.load(fin)
+
+def _get_mapped_filename(filename):
+    """Returns the mapped file for the passed in filename.
+
+    This function is useful in the case that we are trying to execute
+    a program under a virtual machine (like vagrant) where the "base"
+    directory will be different from the one that is passed. 
+
+    This funcion is tailored for vagrant uses where a host based directory
+    is mapped either to /vagrant (by default) or in a different name if
+    it is customized.
+
+    The mapping is stored in the ~/.videmux.config which is a json file
+    that can look as the following:
+
+    {
+        "root-mappings": [
+            ["/home/john/blahblah", "vagrant"]
+        ]
+    }
+
+    If a matching path is not found in the settings then the passed in 
+    filename is returned as it is.
+
+    Parameters:
+
+    filename(str): The full path to the file to map.
+
+    :Returns: Either the mapped filename if it exists or the actual filename
+    otherwise.
+    """
+    settings = _load_settings()
+    mappings = settings.get("root-mappings", [])
+    for actual, mapped in mappings:
+        if filename.startswith(actual):
+            return filename.replace(actual, mapped)
+    return filename
+
+
+if __name__ == '__main__':
+    # fn ="/home/john/repos/milky-way/src/python3.10/rsos/libs/rockport_puller/tests/test_rockport_puller.py" 
+    fn = "/home/john/samples/geoloc/test_utils.py"
+    linenum = 28
+    x   = _find_enclosing_function(fn, linenum)
+    print(x)
+    x   = _find_enclosing_class(fn, linenum)
+    print(x)
+
+    #retrieved = _get_mapped_filename("/home/john/repos/milkey-way/junk")
+    # print(retrieved)
 
 # Uncomment the following to run tests.
 # if __name__ == '__main__':
