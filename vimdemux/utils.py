@@ -1,7 +1,9 @@
+"""Exposes the functions to run and debug python code in tmux."""
 
 import ast
 import enum
 import os
+
 
 def run(fullpath, linenum):
     """Execute the specified file, identified by its full path.
@@ -35,6 +37,37 @@ def run(fullpath, linenum):
 
 
 def debug(fullpath, linenum):
+    """Initiates a debugging session for the specified Python file.
+
+    Parameters
+    ----------
+    fullpath : str
+        The file path of the Python file (script or test) that should be
+        debugged.
+
+    linenum : int
+        The line number to start debugging session from.
+
+    Note:
+    ----
+    The behavior of the debugging session changes based on the type of file and
+    the specified line number.
+
+    1. If the file is a Python script, it is debugged taking the line number
+    into account.
+
+    2. If the file is a Python unittest:
+
+    - If the line number corresponds to a specific test function or method,
+      only that function/method is debugged.
+
+    - If the line number does not correspond to a specific test function or
+      method, the entire test suite present in the file is debugged.
+        
+    A helper function "_get_file_type" is used to determine the type of Python
+    file, and based on its return value, either "_debug_script" or
+    "_debug_test" is called to start the debugging session.
+    """
     filetype = _get_file_type(fullpath) 
     if filetype == _FileType.PYTHON_SCRIPT:
         _debug_script(fullpath)
@@ -45,10 +78,14 @@ def debug(fullpath, linenum):
 
 # Private stuff goes after this line.
 
-_SEND_IT = "'C-m'" 
-
 def _run_script(fullpath):
-    """Runs the passed in script as a python program."""
+    """Runs the passed in script as a python program.
+
+    Parameters
+    ----------
+    fullpath : str
+        The path to the file that needs to be executed. 
+    """
     dirname = os.path.dirname(fullpath)
     basename = os.path.basename(fullpath)
     cmds = [
@@ -122,7 +159,12 @@ def _run_test(fullpath, linenum):
 
 
 def _debug_script(fullpath):
-    """Debugs the passed in script as a python program."""
+    """Debugs the passed in script as a python program.
+
+    Parameters:
+
+    fullpath (str): The full path to the test file.
+    """
     dirname = os.path.dirname(fullpath)
     basename = os.path.basename(fullpath)
     cmds = [
@@ -195,11 +237,19 @@ def _debug_test(fullpath, linenum):
         os.system(tmux_command)
 
 class _FileType(enum.Enum):
+    """Enumeration to descibe the type of a python script."""
     UNKNOWN = 0
     PYTHON_SCRIPT = 1
     PYTHON_TEST = 2
 
+
 def _get_file_type(fullpath):
+    """Returns the file type.
+
+    Parameters:
+
+    fullpath (str): The full path to the test file.
+    """
     dirname = os.path.dirname(fullpath)
     basename = os.path.basename(fullpath)
     if basename.endswith(".py"):
@@ -212,8 +262,17 @@ def _get_file_type(fullpath):
         return _FileType.UNKNOWN
 
 
-
 def _find_enclosing_class(filename, lineno):
+    """Returns the name of the class that enclosed the linenum.
+
+    Parameters:
+
+    fullpath (str): The full path to the test file.
+    linenum (int): The line number position of the cursor within a Vim session.
+
+    Returns: 
+        Either the name of the enclosing class or None.
+    """
     with open(filename, "r") as source:
         tree = ast.parse(source.read(), filename)
     for node in ast.walk(tree):
@@ -222,7 +281,18 @@ def _find_enclosing_class(filename, lineno):
                 return str(node.name)
     return None
 
+
 def _find_enclosing_function(filename, lineno):
+    """Returns the name of the function that enclosed the linenum.
+
+    Parameters:
+
+    fullpath (str): The full path to the test file.
+    linenum (int): The line number position of the cursor within a Vim session.
+
+    Returns: 
+        Either the name of the enclosing function or None.
+    """
     with open(filename, "r") as source:
         tree = ast.parse(source.read(), filename)
     for node in ast.walk(tree):
@@ -231,13 +301,13 @@ def _find_enclosing_function(filename, lineno):
                 return str(node.name)
     return None
 
+
 if __name__ == '__main__':
-    #run("/home/john/samples/geoloc/junk2.py", 8)
-    # run("/home/john/samples/geoloc/test_utils.py", 8)
-    debug("/home/john/samples/geoloc/test_utils.py", 13)
-    #print(_find_enclosing_class("/home/john/samples/geoloc/test_utils.py",8))
-    #function, func_range = find_definition("/home/john/samples/geoloc/test_utils.py",8)
-    #print(function, func_range)
-    #exit(0)
-    #x = "/home/john/samples/geoloc/junk2.py"
-    #run(x, 1)
+    # Self tests.
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    fullpath = os.path.join(current_dir, "test", "test_utils.py" )
+    debug(fullpath , 13)
+
+    fullpath = os.path.join(current_dir, "test", "say_hello.py" )
+    run(fullpath, 0)
+
