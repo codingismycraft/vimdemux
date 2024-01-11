@@ -362,10 +362,7 @@ def _get_hash_for_git_object(filename):
 
 
 if __name__ == '__main__':
-    # fn ="/home/john/repos/milky-way/src/python3.10/rsos/libs/rockport_puller/tests/test_rockport_puller.py" 
     fn = "/home/john/samples/geoloc/test_utils.py"
-    fn = "/home/john/repos/milky-way/src/python3.10/rsos/services/data/resumes/tests/test_resumes_app.py"
-    linenum = 42
-
+    linenum = 12
     c, f = _find_path_to_test(fn, linenum)
     print(c,f)
