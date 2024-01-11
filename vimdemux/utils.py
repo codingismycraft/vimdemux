@@ -29,7 +29,7 @@ def run(fullpath, linenum):
     - If line number does not correspond to a test function or method, the
       entire suite of tests within the script is run (via pytest).
     """
-    filetype = _get_file_type(fullpath) 
+    filetype = _get_file_type(fullpath)
     if filetype == _FileType.PYTHON_SCRIPT:
         _run_script(fullpath)
     elif filetype == _FileType.PYTHON_TEST:
@@ -70,13 +70,14 @@ def debug(fullpath, linenum):
     file, and based on its return value, either "_debug_script" or
     "_debug_test" is called to start the debugging session.
     """
-    filetype = _get_file_type(fullpath) 
+    filetype = _get_file_type(fullpath)
     if filetype == _FileType.PYTHON_SCRIPT:
         _debug_script(fullpath)
     elif filetype == _FileType.PYTHON_TEST:
         _debug_test(fullpath, linenum)
     else:
         print(f"Dont now how to debug {fullpath}")
+
 
 # Private stuff goes after this line.
 
@@ -102,6 +103,7 @@ def _run_script(fullpath):
     tmux_command = f"tmux select-pane -R && tmux send-keys '{cmd}' 'C-m'"
     os.system(tmux_command)
 
+
 def _run_test(fullpath, linenum):
     """Executes a specific test or a whole test suite.
 
@@ -119,12 +121,7 @@ def _run_test(fullpath, linenum):
     fullpath (str): The full path to the test file.
     linenum (int): The line number position of the cursor within a Vim session.
     """
-    function_name, function_class = None, None
-    function_name = _find_enclosing_function(fullpath, linenum)
-
-    if function_name:
-        function_class = _find_enclosing_class(fullpath, linenum)
-
+    function_class, function_name = _find_path_to_test(fullpath, linenum)
     fullpath = _get_mapped_filename(fullpath)
     if function_name is None:
         # Not inside a test thus we need to run the whole suite.
@@ -149,7 +146,7 @@ def _run_test(fullpath, linenum):
         basename = os.path.basename(fullpath)
         test_name = basename[:-3]
         if function_class:
-            test_name += "."+ function_class
+            test_name += "." + function_class
         test_name += "." + function_name
         cmds = [
             f"cd {dirname}",
@@ -183,6 +180,7 @@ def _debug_script(fullpath):
     tmux_command = f"tmux select-pane -R && tmux send-keys '{cmd}' 'C-m'"
     os.system(tmux_command)
 
+
 def _debug_test(fullpath, linenum):
     """Executes a specific test or a whole test suite.
 
@@ -200,9 +198,7 @@ def _debug_test(fullpath, linenum):
     fullpath (str): The full path to the test file.
     linenum (int): The line number position of the cursor within a Vim session.
     """
-    function_name, function_class = None, None
-    function_name = _find_enclosing_function(fullpath, linenum)
-
+    function_class, function_name = _find_path_to_test(fullpath, linenum)
     if function_name:
         function_class = _find_enclosing_class(fullpath, linenum)
 
@@ -230,7 +226,7 @@ def _debug_test(fullpath, linenum):
         basename = os.path.basename(fullpath)
         test_name = basename[:-3]
         if function_class:
-            test_name += "."+ function_class
+            test_name += "." + function_class
         test_name += "." + function_name
         cmds = [
             f"cd {dirname}",
@@ -241,6 +237,7 @@ def _debug_test(fullpath, linenum):
         cmd = ' && '.join(cmds)
         tmux_command = f"tmux select-pane -R && tmux send-keys '{cmd}' 'C-m'"
         os.system(tmux_command)
+
 
 class _FileType(enum.Enum):
     """Enumeration to descibe the type of a python script."""
@@ -268,27 +265,18 @@ def _get_file_type(fullpath):
         return _FileType.UNKNOWN
 
 
-def _find_enclosing_class(filename, lineno):
-    """Returns the name of the class that enclosed the linenum.
-
-    Parameters:
-
-    fullpath (str): The full path to the test file.
-    linenum (int): The line number position of the cursor within a Vim session.
-
-    Returns: 
-        Either the name of the enclosing class or None.
-    """
+def _find_path_to_test(filename, lineno):
     with open(filename, "r") as source:
         tree = ast.parse(source.read(), filename)
     for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            if node.lineno <= lineno <= (node.lineno + node.body[-1].lineno):
-                return str(node.name)
-    return None
+        if isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef):
+            if node.lineno <= lineno and lineno <= node.body[-1].lineno:
+                function_name = str(node.name)
+                class_name = _find_enclosing_class(filename, node.lineno)
+                return class_name, function_name
+    return None, None
 
-
-def _find_enclosing_function(filename, lineno):
+def _find_enclosing_class(filename, lineno):
     """Returns the name of the function that enclosed the linenum.
 
     Parameters:
@@ -302,10 +290,14 @@ def _find_enclosing_function(filename, lineno):
     with open(filename, "r") as source:
         tree = ast.parse(source.read(), filename)
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef) :
-            if node.lineno <= lineno and lineno <= node.body[-1].lineno:
-                return str(node.name)
+        if isinstance(node, ast.ClassDef):
+            class_name = str(node.name)
+            start_line = node.lineno
+            end_line = node.body[-1].lineno + 1
+            if start_line <= lineno <= end_line:
+                return class_name
     return None
+
 
 def _load_settings():
     """Loads the applicable settings.
@@ -319,6 +311,7 @@ def _load_settings():
     filename = os.path.join(home_dir, '.videmux.config')
     with open(filename) as fin:
         return json.load(fin)
+
 
 def _get_mapped_filename(filename):
     """Returns the mapped file for the passed in filename.
@@ -358,26 +351,21 @@ def _get_mapped_filename(filename):
     return filename
 
 
+def _get_hash_for_git_object(filename):
+    import subprocess
+
+    proc = subprocess.Popen(["las", "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result, err = proc.communicate()
+    exit_code = proc.wait()
+    print(exit_code)
+    print(result, err)
+
+
 if __name__ == '__main__':
     # fn ="/home/john/repos/milky-way/src/python3.10/rsos/libs/rockport_puller/tests/test_rockport_puller.py" 
     fn = "/home/john/samples/geoloc/test_utils.py"
-    linenum = 28
-    x   = _find_enclosing_function(fn, linenum)
-    print(x)
-    x   = _find_enclosing_class(fn, linenum)
-    print(x)
+    fn = "/home/john/repos/milky-way/src/python3.10/rsos/services/data/resumes/tests/test_resumes_app.py"
+    linenum = 42
 
-    #retrieved = _get_mapped_filename("/home/john/repos/milkey-way/junk")
-    # print(retrieved)
-
-# Uncomment the following to run tests.
-# if __name__ == '__main__':
-#     # Self tests.
-#     #current_dir = os.path.dirname(os.path.realpath(__file__))
-#     # fullpath = os.path.join(current_dir, "test", "test_utils.py" )
-#     # debug(fullpath , 13)
-# 
-#     #fullpath = os.path.join(current_dir, "test", "say_hello.py" )
-#     fullpath = "/home/john/samples/junk.py"
-#     debug(fullpath, 2)
-# 
+    c, f = _find_path_to_test(fn, linenum)
+    print(c,f)
