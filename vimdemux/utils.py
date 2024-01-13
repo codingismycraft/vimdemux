@@ -13,17 +13,17 @@ def run(fullpath, linenum):
     Parameters
     ----------
     fullpath : str
-        The path to the file that needs to be executed. 
+        The path to the file that needs to be executed.
 
     linenum : int
-        The line number within the file. 
+        The line number within the file.
 
     Depending on file type and line number specified, execution differs:
 
-    1. If file is a Python script, it's run as is.  
+    1. If file is a Python script, it's run as is.
 
     2. If file is a Python test script, execution depends on the line number:
-        
+
     - If line number corresponds to a test function or method, only that
       specific unit test is run (via pytest).
     - If line number does not correspond to a test function or method, the
@@ -65,7 +65,7 @@ def debug(fullpath, linenum):
 
     - If the line number does not correspond to a specific test function or
       method, the entire test suite present in the file is debugged.
-        
+
     A helper function "_get_file_type" is used to determine the type of Python
     file, and based on its return value, either "_debug_script" or
     "_debug_test" is called to start the debugging session.
@@ -87,7 +87,7 @@ def _run_script(fullpath):
     Parameters
     ----------
     fullpath : str
-        The path to the file that needs to be executed. 
+        The path to the file that needs to be executed.
     """
     fullpath = _get_mapped_filename(fullpath)
     dirname = os.path.dirname(fullpath)
@@ -107,11 +107,11 @@ def _run_script(fullpath):
 def _run_test(fullpath, linenum):
     """Executes a specific test or a whole test suite.
 
-    This function is intended for testing files. 
+    This function is intended for testing files.
 
     If the 'linenum' (representing the cursor's position within a Vim session)
     falls within a test method or function, only that specific test is
-    executed. 
+    executed.
 
     If 'linenum' is outside any specific test, the entire test suite is
     executed.
@@ -184,11 +184,11 @@ def _debug_script(fullpath):
 def _debug_test(fullpath, linenum):
     """Executes a specific test or a whole test suite.
 
-    This function is intended for testing files. 
+    This function is intended for testing files.
 
     If the 'linenum' (representing the cursor's position within a Vim session)
     falls within a test method or function, only that specific test is
-    executed. 
+    executed.
 
     If 'linenum' is outside any specific test, the entire test suite is
     executed.
@@ -269,12 +269,17 @@ def _find_path_to_test(filename, lineno):
     with open(filename, "r") as source:
         tree = ast.parse(source.read(), filename)
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef):
+        if isinstance(
+                node,
+                ast.FunctionDef) or isinstance(
+                node,
+                ast.AsyncFunctionDef):
             if node.lineno <= lineno and lineno <= node.body[-1].lineno:
                 function_name = str(node.name)
                 class_name = _find_enclosing_class(filename, node.lineno)
                 return class_name, function_name
     return None, None
+
 
 def _find_enclosing_class(filename, lineno):
     """Returns the name of the function that enclosed the linenum.
@@ -284,7 +289,7 @@ def _find_enclosing_class(filename, lineno):
     fullpath (str): The full path to the test file.
     linenum (int): The line number position of the cursor within a Vim session.
 
-    Returns: 
+    Returns:
         Either the name of the enclosing function or None.
     """
     with open(filename, "r") as source:
@@ -318,7 +323,7 @@ def _get_mapped_filename(filename):
 
     This function is useful in the case that we are trying to execute
     a program under a virtual machine (like vagrant) where the "base"
-    directory will be different from the one that is passed. 
+    directory will be different from the one that is passed.
 
     This funcion is tailored for vagrant uses where a host based directory
     is mapped either to /vagrant (by default) or in a different name if
@@ -333,7 +338,7 @@ def _get_mapped_filename(filename):
         ]
     }
 
-    If a matching path is not found in the settings then the passed in 
+    If a matching path is not found in the settings then the passed in
     filename is returned as it is.
 
     Parameters:
@@ -349,4 +354,3 @@ def _get_mapped_filename(filename):
         if filename.startswith(actual):
             return filename.replace(actual, mapped)
     return filename
-
