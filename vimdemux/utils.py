@@ -350,19 +350,3 @@ def _get_mapped_filename(filename):
             return filename.replace(actual, mapped)
     return filename
 
-
-def _get_hash_for_git_object(filename):
-    import subprocess
-
-    proc = subprocess.Popen(["las", "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    result, err = proc.communicate()
-    exit_code = proc.wait()
-    print(exit_code)
-    print(result, err)
-
-
-if __name__ == '__main__':
-    fn = "/home/john/samples/geoloc/test_utils.py"
-    linenum = 12
-    c, f = _find_path_to_test(fn, linenum)
-    print(c,f)
