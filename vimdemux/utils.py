@@ -171,7 +171,7 @@ def _debug_script(fullpath):
     basename = os.path.basename(fullpath)
     cmds = [
         f"cd {dirname}",
-        "unset PYTHONBREAKPOINT",
+        "export PYTHONBREAKPOINT=ipdb.set_trace",
         "clear",
         f"python3.10 -m ipdb {basename} "
     ]
