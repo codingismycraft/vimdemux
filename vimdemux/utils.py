@@ -131,9 +131,9 @@ def _run_test(fullpath, linenum):
         basename = os.path.basename(fullpath)
         cmds = [
             f"cd {dirname}",
-            "unset PYTHONBREAKPOINT",
             "clear",
-            f"python3.10 -m unittest {basename} "
+            f"echo {basename}",
+            f"pytest {basename} "
         ]
         cmd = ' && '.join(cmds)
         tmux_command = f"tmux select-pane -R && tmux send-keys '{cmd}' 'C-m'"
@@ -144,15 +144,15 @@ def _run_test(fullpath, linenum):
         # python3.10 -m unittest  test_utils.TestClass.test_func
         dirname = os.path.dirname(fullpath)
         basename = os.path.basename(fullpath)
-        test_name = basename[:-3]
+        test_name = basename
         if function_class:
-            test_name += "." + function_class
-        test_name += "." + function_name
+            test_name += "::" + function_class
+        test_name += "::" + function_name
         cmds = [
             f"cd {dirname}",
-            "unset PYTHONBREAKPOINT",
             "clear",
-            f"python3.10 -m unittest {test_name} "
+            f"echo {test_name}",
+            f"pytest {test_name} "
         ]
         cmd = ' && '.join(cmds)
         tmux_command = f"tmux select-pane -R && tmux send-keys '{cmd}' 'C-m'"
@@ -211,9 +211,8 @@ def _debug_test(fullpath, linenum):
         basename = os.path.basename(fullpath)
         cmds = [
             f"cd {dirname}",
-            "export PYTHONBREAKPOINT=ipdb.set_trace",
             "clear",
-            f"python3.10 -m unittest {basename} "
+            f"pytest --trace {basename} "
         ]
         cmd = ' && '.join(cmds)
         tmux_command = f"tmux select-pane -R && tmux send-keys '{cmd}' 'C-m'"
@@ -224,15 +223,14 @@ def _debug_test(fullpath, linenum):
         # python3.10 -m unittest  test_utils.TestClass.test_func
         dirname = os.path.dirname(fullpath)
         basename = os.path.basename(fullpath)
-        test_name = basename[:-3]
+        test_name = basename
         if function_class:
-            test_name += "." + function_class
-        test_name += "." + function_name
+            test_name += "::" + function_class
+        test_name += "::" + function_name
         cmds = [
             f"cd {dirname}",
-            "export PYTHONBREAKPOINT=ipdb.set_trace",
             "clear",
-            f"python3.10 -m unittest {test_name} "
+            f"pytest --trace {test_name} "
         ]
         cmd = ' && '.join(cmds)
         tmux_command = f"tmux select-pane -R && tmux send-keys '{cmd}' 'C-m'"
