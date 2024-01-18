@@ -312,8 +312,11 @@ def _load_settings():
     """
     home_dir = pathlib.Path.home()
     filename = os.path.join(home_dir, '.videmux.config')
-    with open(filename) as fin:
-        return json.load(fin)
+    try:
+        with open(filename) as fin:
+            return json.load(fin)
+    except FileNotFoundError:
+        return {}
 
 
 def _get_mapped_filename(filename):
@@ -333,7 +336,7 @@ def _get_mapped_filename(filename):
     {
         "root-mappings": [
             ["/home/john/blahblah", "vagrant"]
-        ]
+         
     }
 
     If a matching path is not found in the settings then the passed in
@@ -352,3 +355,8 @@ def _get_mapped_filename(filename):
         if filename.startswith(actual):
             return filename.replace(actual, mapped)
     return filename
+
+
+if __name__ == '__main__':
+    # Self test
+    print(_get_mapped_filename("junkjunk"))
