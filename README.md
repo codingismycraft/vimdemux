@@ -11,8 +11,9 @@ pip install pytest
 
 - pdbpp
 
+
 ```
-pip install pdbpp==0.7
+pip install pdbpp>=0.10.3
 ```
 
 # Installation

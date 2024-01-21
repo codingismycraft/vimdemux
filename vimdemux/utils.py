@@ -173,7 +173,7 @@ def _debug_script(fullpath):
         f"cd {dirname}",
         "export PYTHONBREAKPOINT=ipdb.set_trace",
         "clear",
-        f"python3.10 -m ipdb {basename} "
+        f"python3.10 -m pdb {basename} "
     ]
 
     cmd = ' && '.join(cmds)
